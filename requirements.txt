@@ -5,6 +5,7 @@ requests
 bs4
 bitmath
 clipboard
+make_colors
 
 #for delopment
 #pydebuger

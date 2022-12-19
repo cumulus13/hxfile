@@ -9,7 +9,7 @@
 from __future__ import print_function
 
 import os, sys, signal, traceback, getpass, re
-#from make_colors import make_colors
+from make_colors import make_colors
 try:
     from pydebugger.debug import debug
 except:
@@ -77,7 +77,7 @@ class Hxfile(object):
             self.API_KEY_TEMP = api_key_temp
         debug(self_API_KEY = self.API_KEY)
         if not self.API_KEY:
-            logger.error('No API Key !')
+            logger.warning('No API Key !')
             #os.kill(os.getpid(), signal.SIGTERM)
         self.URL = url or self.URL or self.CONFIG.get_config('general', 'url')
         
@@ -97,7 +97,7 @@ class Hxfile(object):
         
     @classmethod
     def logger(self, message, status="info"):
-        logfile = os.path.join(os.path.dirname(os.path.realpath(__file__)), os.path.basename(self.CONFIG.configname).split(".")[0] + ".log")
+        logfile = os.path.join(os.path.dirname(os.path.realpath(__file__)), os.path.splitext(os.path.basename(os.path.realpath(__file__)))[0] + ".log")
         if not os.path.isfile(logfile):
             lf = open(logfile, 'wb')
             lf.close()
@@ -422,6 +422,10 @@ class Hxfile(object):
             logger.debug('try get direct link')
             c2 = self.file_direct_link(id)
             debug(c2 = c2)
+        else:
+            debug(c1 = c1)
+            logger.error(c1.get('msg'))
+            return c1
         if not isinstance(c2, dict):
             return False
         if c2.get('msg') == 'no file':
@@ -739,7 +743,7 @@ user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
     def usage(self):
         parser = argparse.ArgumentParser('hxfile')
         parser.add_argument('-d', '--download', action = 'store', help = 'Download by given url or id/filecode, you can change use method "1" or "2" with -m/--method, default method is "2"', nargs = '*')
-        parser.add_argument('-m', '--method', action = 'store', help = 'Download/Generate method: "2" download/generate url without API_KEY needed, but you must still input API_KEY to config file "hxfile.ini" for other function requirement, "1" download/generate with API_KEY flow check your file --> if not exists --> clone --> generate direct_link',  default = 1, type = int)
+        parser.add_argument('-m', '--method', action = 'store', help = 'Download/Generate method: "2" download/generate url without API_KEY needed, but you must still input API_KEY to config file "hxfile.ini" for other function requirement, "1" download/generate with API_KEY flow check your file --> if not exists --> clone --> generate direct_link',  default = 2, type = int)
         parser.add_argument('-p',  '--download-path', action = 'store', help = 'Save download action file to directory')
         parser.add_argument('-n', '--save-as', action = 'store', help = 'Download save as')
         parser.add_argument('-i', '--info', action = 'store', help = 'Get File info')
@@ -775,17 +779,22 @@ user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
             if args.download:
                 for d in args.download:
                     if args.method == 1:
-                        result = self.download1(args.download).get('result')
-                        jprint(result)
-                        if isinstance(result, list):
-                            for i in result:
-                                self.downloader(i.get('url'), download_path, saveas)
-                                if args.clip: clipboard.copy(i.get('url'))
+                        result = self.download1(d)
+                        if result.get('msg') == 'OK':
+                            result = result.get('result')
+                            jprint(result)
+                            if isinstance(result, list):
+                                for i in result:
+                                    self.downloader(i.get('url'), download_path, saveas)
+                                    if args.clip: clipboard.copy(i.get('url'))
+                            else:
+                                self.downloader(result.get('url'), download_path, saveas)
+                                if args.clip: clipboard.copy(result.get('url'))
                         else:
-                            self.downloader(result.get('url'), download_path, saveas)
-                            if args.clip: clipboard.copy(result.get('url'))
+                            logger.warning(result)
+                            print(make_colors("Invalid URL/ID !", 'lw', 'r'))
                     elif args.method == 2:
-                        url = self.download2(args.download)
+                        url = self.download2(d)
                         if args.clip: clipboard.copy(url)
                         self.downloader(url, download_path, saveas)
             elif args.generate:
@@ -800,8 +809,9 @@ user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
                                 if args.clip: clipboard.copy(url)
                                 
                         else:
-                            self.downloader(result.get('url'), download_path, saveas)
-                            if args.clip: clipboard.copy(result.get('url'))
+                            if requests.get('msg') == 'OK':
+                                self.downloader(result.get('url'), download_path, saveas)
+                                if args.clip: clipboard.copy(result.get('url'))
                     elif args.method == 2:
                         url = self.download2(args.download)
                         self.downloader(url, download_path, saveas)
@@ -816,7 +826,24 @@ user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
             elif args.upload:
                 jprint(self.upload(args.upload, self.API_KEY))
             elif args.list_file:
-                jprint(self.file_list())
+                result = self.file_list()
+                jprint(result)
+                if result.get('msg') == 'OK' and result.get('result').get('files'):
+                    n = 1
+                    for i in result.get('result').get('files'):
+                        print(
+                            make_colors(str(n).zfill(2) + ".", 'lm') + " " + \
+                            make_colors(i.get('name'), 'lc') + " " + "[" + \
+                            make_colors(i.get('file_code'), 'ly') + "] [" + \
+                            make_colors(bitmath.parse_string_unsafe(i.get('size')).MB, 'lg') + "]"
+                        )
+                        n += 1
+                    q = raw_input(make_colors("select number download to:", 'b', 'y') + " ")
+                    if q.isdigit():
+                        if int(q) < len(result.get('result').get('files')):
+                            s = result.get('result').get('files')[int(q) - 1]
+                            debug(s = s)
+                            self.downloader(self.download2(s.get('file_code')), download_path, saveas, copyurl_only = args.clip)
             elif args.list_folder:
                 jprint(self.folder_list(args.list_folder))
             elif args.rename_file:
