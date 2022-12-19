@@ -88,6 +88,8 @@ setup(
     author = 'Hadi Cahyadi LD',
     author_email = 'cumulus13@gmail.com',
     description = ('unofficial HXFILE API (still maintenance, open contributor)'),
+    long_description = get_description(),
+    long_description_content_type = 'text/markdown', 
     license = 'MIT License',
     keywords = ['hxfile', 'api', 'unoffcial', 'link generator', 'generator', 'download', 'downloader', 'cloud', 'file manager', 'cli', 'command line', 'unofficial HXFILE API (still maintenance, open contributor'],
     url = 'https://github.com/cumulus13/hxfile',
