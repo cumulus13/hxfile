@@ -1,0 +1,14 @@
+unidecode
+configset
+parserheader
+requests
+bs4
+bitmath
+clipboard
+
+#for delopment
+#pydebuger
+#jsoncolor
+
+#for notification
+#xnotify

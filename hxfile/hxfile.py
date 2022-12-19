@@ -9,10 +9,21 @@
 from __future__ import print_function
 
 import os, sys, signal, traceback, getpass, re
-from make_colors import make_colors
-from pydebugger.debug import debug
+#from make_colors import make_colors
+try:
+    from pydebugger.debug import debug
+except:
+    def debug(*args, **kwargs):
+        return ''
 import argparse
-from xnotify import notify
+try:
+    from xnotify import notify
+except:
+    class notify:
+        @classmethod
+        def send(self, *args, **kwargs):
+            return ''
+        
 from unidecode import unidecode
 try:
     from jsoncolor import jprint
@@ -52,19 +63,22 @@ class Hxfile(object):
     PROXIES = {}
     HEADERS = Parserheader.parserheader()
     debug(HEADERS = HEADERS)
-    API_KEY = ""
+    API_KEY_TEMP = ""
+    API_KEY = API_KEY_TEMP or ''
     SESSION = requests.session()
     SESSION.headers.update(HEADERS)
     ID = None
     
-    def __init__(self, api_key = None, url = None, headers = None, configfile = None, proxies = {}, id = None):
+    def __init__(self, api_key = None, url = None, headers = None, configfile = None, proxies = {}, id = None, api_key_temp = None):
         if configfile:
             if os.path.isfile(configfile): self.CONFIG = configset(configfile)        
-        self.API_KEY = api_key or self.API_KEY or self.CONFIG.get_config('api', 'key')
+        self.API_KEY = api_key or api_key_temp or self.API_KEY or self.CONFIG.get_config('api', 'key')
+        if api_key_temp:
+            self.API_KEY_TEMP = api_key_temp
         debug(self_API_KEY = self.API_KEY)
         if not self.API_KEY:
             logger.error('No API Key !')
-            os.kill(os.getpid(), signal.SIGTERM)
+            #os.kill(os.getpid(), signal.SIGTERM)
         self.URL = url or self.URL or self.CONFIG.get_config('general', 'url')
         
         if not self.URL:
@@ -741,6 +755,7 @@ user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
         parser.add_argument('-C', '--mkdir', action = 'store', help = 'Create new Folder', nargs = 2)
         parser.add_argument('-sd', '--show-deleted', action = 'store_true', help = 'Show files delete along for x days')
         parser.add_argument('--api-key', action = 'store', help = 'set API_KEY')
+        parser.add_argument('--api-key-temp', action = 'store', help = 'set API_KEY as temporary key')
         parser.add_argument('-g', '--generate', help = 'Generate link/id as direct download link', action = 'store', nargs = '*')
         parser.add_argument('--clip', help = 'Copy direct download url to clipboard', action = 'store_true')
         
@@ -754,6 +769,8 @@ user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
             if args.api_key:
                 self.CONFIG.write_config('api', 'key', args.api_key)
                 self.API_KEY = args.api_key
+            if args.api_key_temp:
+                self.API_KEY = args.api_key_temp
             
             if args.download:
                 for d in args.download:
@@ -793,11 +810,11 @@ user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
             elif args.info:
                 jprint(self.file_info(args.info))
             elif args.account_info:
-                jprint(self.account_info(args.api_key))
+                jprint(self.account_info(self.API_KEY))
             elif args.account_stat:
                 jprint(self.account_stats(args.api_ley, args.account_stat))
             elif args.upload:
-                jprint(self.upload(args.upload, args.api_key))
+                jprint(self.upload(args.upload, self.API_KEY))
             elif args.list_file:
                 jprint(self.file_list())
             elif args.list_folder:
