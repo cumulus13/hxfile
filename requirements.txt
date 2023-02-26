@@ -8,7 +8,7 @@ clipboard
 make_colors
 
 #for delopment
-#pydebuger
+#pydebugger
 #jsoncolor
 
 #for notification
