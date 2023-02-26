@@ -131,17 +131,17 @@ class Hxfile(object):
     
     @classmethod
     def get_id(self, id = None):
-        debug(id = id)
+        debug(id = id))
         id = id or self.ID
         url = ''
-        debug(id = id)
+        debug(id = id))
         if id[:4] == 'http' and "://" in id:
             id = urlparse(id).path[1:]
             debug(id = id)
             debug(url = url)
         else:
-            url = self.URL + id
-            debug(url = url)
+            url = self.URL + id[0]
+            debug(url = url))
         return id, url
     
     @classmethod
@@ -198,11 +198,12 @@ class Hxfile(object):
     @classmethod
     def generate(self, url):
         id, url = self.get_id(url)
+        debug(id = id))
         if not id:
             logger.error("invalid id !")
             return False
         
-        debug(id = id)
+        debug(id = id))
         data = {
                     'op':'download2',
                         'id':id,
@@ -221,7 +222,7 @@ class Hxfile(object):
                         'accept-language' : 'en-US,en;q=0.9',
                         'cache-control' : 'max-age=0',
                         'content-length' : '72',
-                        'origin' : 'https://hxfile.co',
+                        'origin' : self.URL or 'https://hxfile.co',
                         'referer' : url,
                         'sec-fetch-dest' : 'document',
                         'sec-fetch-mode' : 'navigate',
@@ -439,6 +440,7 @@ class Hxfile(object):
     
     @classmethod
     def download2(self, id):
+        debug(id = id))
         return self.generate(id)
     @classmethod
     def login(self, username, password, redirect_url = None):
@@ -800,7 +802,7 @@ user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
             elif args.generate:
                 for d in args.generate:
                     if args.method == 1:
-                        result = self.download1(args.download).get('result')
+                        result = self.download1(args.generate).get('result')
                         jprint(result)
                         if isinstance(result, list):
                             for i in result:
@@ -813,7 +815,7 @@ user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,
                                 self.downloader(result.get('url'), download_path, saveas)
                                 if args.clip: clipboard.copy(result.get('url'))
                     elif args.method == 2:
-                        url = self.download2(args.download)
+                        url = self.download2(args.generate)
                         self.downloader(url, download_path, saveas)
                         if args.clip: clipboard.copy(url)
                         
